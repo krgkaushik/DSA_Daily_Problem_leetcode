@@ -6,15 +6,17 @@ public:
         
         
         int i = 1;
+        int ans;
         while( true ){
             int curr = i * k;
             if( !map.contains(curr) ){
-                return curr;
+                ans = curr;
+                break;
             }
             i++;
         }
         
-        return 1;
+        return ans;
         
     }
 };
