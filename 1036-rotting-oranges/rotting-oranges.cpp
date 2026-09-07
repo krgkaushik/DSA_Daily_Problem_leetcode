@@ -1,57 +1,139 @@
-class Solution {
-public:
-    int orangesRotting(vector<vector<int>>& grid) {
-        int n =  grid.size();
-        int m = grid[0].size();
-        queue<pair<pair<int,int>,int>>q;
-        vector<vector<bool>> vis ( n , vector<bool>(m,false) );
-        int ans = 0 ;
+#include <Keypad.h>
+#include <LiquidCrystal.h>
 
-        for( int i = 0 ; i<n; i++ ){
-            for( int j = 0 ; j<m; j++ ){
-                if( grid[i][j] == 2 ){
-                    q.push({{i,j} , 0 });
-                    vis[i][j] = true;
-                }
-            }
-        }
+// ---------- LCD CONNECTIONS ----------
+// RS  -> D12
+// E   -> D11
+// DB4 -> D10
+// DB5 -> A0
+// DB6 -> A1
+// DB7 -> A2
 
-        while( q.size() > 0 ){
-            int i = q.front().first.first;
-            int j = q.front().first.second;
-            int time = q.front().second;
-            q.pop();
+LiquidCrystal lcd(12, 11, 10, A0, A1, A2);
 
-            ans =  max( ans , time );
 
-            if( i-1 >= 0 && !vis[i-1][j] && grid[i-1][j] == 1 ){
-                vis[i-1][j] = true;
-                q.push({{i-1,j},time+1});
-            }
-            if( i+1 < n && !vis[i+1][j] && grid[i+1][j] == 1 ){
-                vis[i+1][j] = true;
-                q.push({{i+1,j} , time+1 });
-            }
+// ---------- KEYPAD CONNECTIONS ----------
+const byte ROWS = 4;
+const byte COLS = 4;
 
-            if( j-1 >= 0 && !vis[i][j-1] && grid[i][j-1] == 1 ){
-                vis[i][j-1] = true;
-                q.push({{i,j-1} , time+1 });
-
-            }
-
-            if( j+1 < m && !vis[i][j+1] && grid[i][j+1] == 1 ){
-                vis[i][j+1] = true;
-                q.push({{i, j+1 }, time+1 });
-            }
-        }
-        
-        for( int i = 0; i<n; i++ ){
-            for( int j = 0 ; j<m ; j++ ){
-                if(!vis[i][j] && grid[i][j] == 1 ){
-                    return -1;
-                }
-            }
-        }
-        return ans;
-    }
+char keys[ROWS][COLS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
 };
+
+byte rowPins[ROWS] = {2, 3, 4, 5};
+byte colPins[COLS] = {6, 7, 8, 9};
+
+Keypad keypad = Keypad(
+  makeKeymap(keys),
+  rowPins,
+  colPins,
+  ROWS,
+  COLS
+);
+
+
+// ---------- RFID ID ----------
+String inputID = "";
+String authorizedID = "1234";
+
+
+void setup() {
+
+  lcd.begin(16, 2);
+
+  Serial.begin(9600);
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("RFID SYSTEM");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Scan Tag...");
+
+  delay(2000);
+
+  lcd.clear();
+  lcd.print("Enter RFID ID:");
+}
+
+
+void loop() {
+
+  char key = keypad.getKey();
+
+  if (key) {
+
+    // # = Submit RFID ID
+    if (key == '#') {
+
+      lcd.clear();
+
+      lcd.setCursor(0, 0);
+      lcd.print("RFID ID:");
+
+      lcd.setCursor(0, 1);
+      lcd.print(inputID);
+
+      Serial.print("RFID ID: ");
+      Serial.println(inputID);
+
+      delay(1500);
+
+      lcd.clear();
+
+      // Check authorized ID
+      if (inputID == authorizedID) {
+
+        lcd.setCursor(0, 0);
+        lcd.print("ACCESS GRANTED");
+
+        Serial.println("ACCESS GRANTED");
+
+      } 
+      else {
+
+        lcd.setCursor(0, 0);
+        lcd.print("ACCESS DENIED");
+
+        Serial.println("ACCESS DENIED");
+      }
+
+      delay(2000);
+
+      // Reset
+      inputID = "";
+
+      lcd.clear();
+      lcd.print("Enter RFID ID:");
+    }
+
+
+    // * = Clear ID
+    else if (key == '*') {
+
+      inputID = "";
+
+      lcd.clear();
+      lcd.print("Enter RFID ID:");
+
+      Serial.println("ID Cleared");
+    }
+
+
+    // Add pressed key to ID
+    else {
+
+      // Maximum 8 characters
+      if (inputID.length() < 8) {
+
+        inputID += key;
+
+        lcd.setCursor(0, 1);
+        lcd.print(inputID);
+      }
+    }
+  }
+}
