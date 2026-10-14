@@ -1,46 +1,39 @@
-/**
- * Definition for a binary tree node.
- * struct TreeNode {
- *     int val;
- *     TreeNode *left;
- *     TreeNode *right;
- *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
- *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
- *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
- * };
- */
-class Solution {
-public:
-    vector<vector<int>> levelOrder(TreeNode* root) {   
+from sklearn.datasets import load_wine
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+import matplotlib.pyplot as plt
 
-        queue<TreeNode*>q;
-        q.push(root);
-        vector<vector<int>>v;
-        if( root == NULL ){
-            return v;
-        }
+data = load_wine()
+X = StandardScaler().fit_transform(data.data)
 
-        while( q.size() > 0 ){
-            vector<int>c;
-            int n = q.size();
-            for( int i = 0; i<n;i++ ){
+k_values = range(2, 9)
+inertias = []
+silhouettes = []
 
-            TreeNode*curr = q.front();
+for k in k_values:
+    model = KMeans(n_clusters=k, random_state=42, n_init=10)
+    labels = model.fit_predict(X)
+    inertias.append(model.inertia_)
+    silhouettes.append(silhouette_score(X, labels))
 
-            q.pop();
-            c.push_back(curr->val);
-            if( curr -> left != NULL ){
+print("k  Inertia  Silhouette")
+for k, i, s in zip(k_values, inertias, silhouettes):
+    print(k, round(i, 2), round(s, 3))
 
-            q.push(curr->left);
-            }
-            if( curr -> right != NULL ){
-                q.push( curr -> right );
-            }
-            }
-            v.push_back(c);
-        }
-        return v;
-      
-        
-    }
-};
+plt.plot(list(k_values), inertias, marker="o")
+plt.xlabel("Number of clusters (k)")
+plt.ylabel("Inertia")
+plt.title("Elbow Method")
+plt.grid(True)
+plt.show()
+
+plt.plot(list(k_values), silhouettes, marker="o")
+plt.xlabel("Number of clusters (k)")
+plt.ylabel("Silhouette Score")
+plt.title("Silhouette Method")
+plt.grid(True)
+plt.show()
+
+best_k = list(k_values)[silhouettes.index(max(silhouettes))]
+print("Best k by maximum silhouette score:", best_k)
